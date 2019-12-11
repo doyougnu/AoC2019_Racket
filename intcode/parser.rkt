@@ -1,5 +1,5 @@
 #lang brag
 
-program : (rule | data)*
-data    : /"data:" INTEGER (/"," INTEGER)*
-rule    : /"rule:" INTEGER /"->" RKT /"from" INTEGER INTEGER /"send" /"to" INTEGER
+program : (intcode-rule | intcode-data)*
+intcode-data    : /"data:" INTEGER (/"," INTEGER)*
+intcode-rule    : /"rule:" INTEGER /"->" RKT

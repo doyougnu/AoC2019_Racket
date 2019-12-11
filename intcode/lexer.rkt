@@ -11,8 +11,8 @@
    [(from/to "//" "\n") (token lexeme #:skip? #t)]
    [digits (token 'INTEGER (string->number lexeme))]
    [(:or "," "data:") lexeme]
-   [(from/to "'" "'")
-    (token 'RKT (trim-ends "'" lexeme "'"))]
+   [(from/to "@" "@")
+    (token 'RKT (trim-ends "@" lexeme "@"))]
    [reserved-terms (token lexeme lexeme)]
    [(eof) (void)]))
 

@@ -2,11 +2,11 @@
 
 (require syntax/strip-context
          racket/syntax
-         "parser.rkt"
-         "tokenizer.rkt")
+         intcode/parser
+         intcode/tokenizer)
 
 
 (define (read-syntax path port)
-  (datum->syntax #f `(module intcode-mod "expander.rkt"
+  (datum->syntax #f `(module intcode-mod intcode/expander
                        ,(parse path (make-tokenizer port)))))
 (provide read-syntax)

@@ -1,7 +1,7 @@
 #lang racket
 (require brag/support
          racket/contract
-         "lexer.rkt")
+         intcode/lexer)
 
 (define (make-tokenizer ip [path #f])
   (port-count-lines! ip)

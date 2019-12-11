@@ -1,16 +1,16 @@
 #lang racket
 
-(require racket/syntax)
-
+(require racket/match racket/syntax threading)
 (define-syntax-rule (intcode-mb (program PARSE-TREE ...))
   (#%module-begin
-   (begin
-     PARSE-TREE
-     ...
-     (displayln *data*))))
-(provide (rename-out [intcode-mb #%module-begin]))
-(provide #%app #%datum)
+   PARSE-TREE ...
+   (run *data*)
+   ;; print the final result
+   (get-data 0)))
+(provide (rename-out [intcode-mb #%module-begin]) #%app #%datum)
 
+(define-namespace-anchor ns-anc)
+(define ns (namespace-anchor->namespace ns-anc))
 ;; we doing this imperatively because the problem lends itself to that easily
 ;; and frankly I need to practice it. I'm too abused by haskell this could be
 ;; functional by constructing the hash table first, then passing around the data
@@ -18,32 +18,38 @@
 (define *funcs* (make-hasheqv))
 (define *data* (void))
 
-;; (define-syntax (rule stx)
-;;   (syntax-case stx ()
-;;     [(rule n f left-arg right-arg output-num)
-;;      #'(set-rule! n (string->symbol f) left-arg right-arg output-num)]))
-(define (rule n f left-arg right-arg output)
-  (hash-set! *funcs* n '(apply f (data-get left-arg) (data-get right-arg))))
-(provide rule)
+(define (intcode-rule n f)
+  (hash-set! *funcs* n (read (open-input-string f))))
+(provide intcode-rule)
 
-;; (define-syntax (set-rule! stx)
-;;   (syntax-case stx ()
-;;     [(set-rule! n f left-arg right-arg output-num)
-;;      (hash-set! *funcs* #'n
-;;                 #'(f (data-get left-arg) (data-get right-arg)))]))
-(define (set-rule! n f l r . args)
-  (hash-set! *funcs* n (apply f (data-get l) (data-get r))))
+(define (set-rule! n f )
+  hash-set! *funcs* n `,f)
 
-(define (data-get i)
+(define (set-data! i v)
+  (vector-set! *data* i v))
+
+(define (get-rule i)
   (hash-ref *funcs* i))
 
-(define (data . ds)
-  (set! *data* (list->vector ds)))
-(provide data)
+(define (get-data i)
+  (vector-ref *data* i))
 
-;; (define-syntax-rule (program rule-or-data ...)
-;;   (begin
-;;     (void rule-or-data ...)
-;;     (displayln *data*)
-;;     (displayln *funcs*)))
-;; (provide program)
+(define (intcode-data . ds)
+  (set! *data* (list->vector ds)))
+(provide intcode-data)
+
+(define (compute f left-arg right-arg output)
+  (let* ([func (get-rule f)]
+         [result (eval `(,func (get-data ,left-arg) (get-data ,right-arg)) ns)])
+    (set-data! output result)))
+
+(define (run program)
+  (match program
+    ;; when we see a 99 we end the program
+    [(vector 99 rest ...) 'end]
+    [(vector f l-arg r-arg output rest ...) (begin
+                                              (compute f l-arg r-arg output)
+                                              ;; notice that we cannot just call
+                                              ;; rest here because thats a list
+                                              ;; and I bet coerican is expensive
+                                              (run (vector-drop program 4)))]))
